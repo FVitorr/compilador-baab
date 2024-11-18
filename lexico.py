@@ -41,6 +41,8 @@ class Lexico:
         return car
     
     def unGetChar(self, simbolo):
+        if simbolo == '\0':
+            return
         if simbolo == '\n':
             self.linha -= 1
 
@@ -86,27 +88,31 @@ class Lexico:
                 elif simbolo == TOKEN.msg(TOKEN.ASPAS_SIMPLES) or simbolo == TOKEN.msg(TOKEN.ASPAS_DUPLA):
                     estado = 4 #Buscar String
                 elif simbolo == "(":
-                    return (TOKEN.abrePar, "(", lin, col)
+                    return (TOKEN.ABREPAR, "(", lin, col)
                 elif simbolo == ")":
-                    return (TOKEN.fechaPar, ")", lin, col)
+                    return (TOKEN.FECHAPAR, ")", lin, col)
                 elif simbolo == ",":
-                    return (TOKEN.virg, ",", lin, col)
+                    return (TOKEN.VIRG, ",", lin, col)
                 elif simbolo == ";":
-                    return (TOKEN.ptoVirg, ";", lin, col)
+                    return (TOKEN.PTOVIRG, ";", lin, col)
                 elif simbolo == ".":
                     estado = 10
                 elif simbolo == "+":
-                    return (TOKEN.mais, "-", lin, col)
+                    return (TOKEN.MAIS, "-", lin, col)
                 elif simbolo == "-":
-                    return (TOKEN.menos, "-", lin, col)
+                    estado = 9
                 elif simbolo == "*":
-                    return (TOKEN.multiplica, "*", lin, col)
+                    return (TOKEN.MULTIPLICA, "*", lin, col)
                 elif simbolo == "/":
-                    return (TOKEN.divide, "/", lin, col)
+                    return (TOKEN.DIVIDE, "/", lin, col)
                 elif simbolo == "{":
-                    return (TOKEN.abreChave, "{", lin, col)
+                    return (TOKEN.ABRECHAVE, "{", lin, col)
                 elif simbolo == "}":
-                    return (TOKEN.fechaChave, "}", lin, col)
+                    return (TOKEN.FECHACHAVE, "}", lin, col)
+                elif simbolo == "[":
+                    return (TOKEN.ABRECONCH, "[", lin, col)
+                elif simbolo == "]":
+                    return (TOKEN.FECHACONCH, "]", lin, col)
                 elif simbolo == "<":
                     estado = 5  # < ou <=
                 elif simbolo == ">":
@@ -116,7 +122,7 @@ class Lexico:
                 elif simbolo == "!":  # !=
                     estado = 8
                 elif simbolo == '\0':
-                    return (TOKEN.eof, '<eof>', lin, col)
+                    return (TOKEN.EOF, '<eof>', lin, col)
                 else:
                     #lexema += simbolo
                     #return (TOKEN.erro, lexema, lin, col)
@@ -139,7 +145,7 @@ class Lexico:
                     estado = 10
                 else:
                     self.unGetChar(simbolo)
-                    return (TOKEN.num, lexema, lin, col)
+                    return (TOKEN.INT, lexema, lin, col)
 
             elif estado == 3.1:
                 #parte real do numero
@@ -154,12 +160,12 @@ class Lexico:
                     estado = 10
                 else:
                     self.unGetChar(simbolo)
-                    return (TOKEN.num, lexema, lin, col)
+                    return (TOKEN.FLOAT, lexema, lin, col)
             elif estado == 4: #String
                 while True:
                     if simbolo == TOKEN.msg(TOKEN.ASPAS_SIMPLES) or simbolo == TOKEN.msg(TOKEN.ASPAS_DUPLA):
                         lexema += simbolo
-                        return (TOKEN.string, lexema, lin, col)
+                        return (TOKEN.STRING, lexema, lin, col)
                     elif simbolo in ['\0', '\n', ';']:
                         return (TOKEN.erro, lexema, lin, col)
                     else:
@@ -168,32 +174,41 @@ class Lexico:
             elif estado == 5:
                 if simbolo == '=':
                     lexema = lexema + simbolo
-                    return (TOKEN.oprel, lexema, lin, col)
+                    return (TOKEN.OPREL, lexema, lin, col)
                 else:
                     self.unGetChar(simbolo)
-                    return (TOKEN.oprel, lexema, lin, col)
+                    return (TOKEN.OPREL, lexema, lin, col)
             elif estado == 6:
                 if simbolo == '=':
                     lexema = lexema + simbolo
-                    return (TOKEN.oprel, lexema, lin, col)
+                    return (TOKEN.OPREL, lexema, lin, col)
                 else:
                     self.unGetChar(simbolo)
-                    return (TOKEN.oprel, lexema, lin, col)
+                    return (TOKEN.OPREL, lexema, lin, col)
             elif estado == 7:
                 if simbolo == '=':
                     lexema += simbolo
-                    return (TOKEN.igual, lexema, lin, col)
+                    #IGUAL ==
+                    return (TOKEN.OPREL, lexema, lin, col)
                 else:
                     self.unGetChar(simbolo)
-                    return (TOKEN.atrib, lexema, lin, col)
+                    return (TOKEN.ATRIB, lexema, lin, col)
             elif estado == 8:
                 if simbolo == '=':
                     lexema += simbolo
-                    return (TOKEN.diferente, lexema, lin, col)
+                    return (TOKEN.OPREL, lexema, lin, col)
                 else:  # se o proximo simbolo nao for = , quer dizer que tem um ! solto no código
                     self.unGetChar(simbolo)  # eu volto o "ponteiro" pra posicao que eu encontrei a !
                     #return (TOKEN.erro, lexema, lin, col)
                     estado = 10  # retorno o ! dizendo que ele é um erro
+            elif estado == 9:
+                if simbolo == '>':
+                    lexema += simbolo
+                    return (TOKEN.SETA, lexema, lin, col)
+                else:
+                    self.unGetChar(simbolo)
+                    return (TOKEN.MENOS, lexema, lin, col)
+                
             elif estado == 10:
                 while True:
                     lexema += simbolo
@@ -214,7 +229,7 @@ class Lexico:
     def testaLexico(self):
         self.tokenLido = self.getToken()
         (token, lexema, linha, coluna) = self.tokenLido
-        while token != TOKEN.eof or lexema == 'end':
+        while token != TOKEN.EOF :
             self.imprimeToken(self.tokenLido)
             self.tokenLido = self.getToken()
             (token, lexema, linha, coluna) = self.tokenLido

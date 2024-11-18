@@ -7,40 +7,53 @@
 
 from enum import IntEnum
 class TOKEN(IntEnum):
-    erro = 1
-    eof = 2
-    ident = 3
-    num = 4
-    string = 5
+    ERRO = 1
+    EOF = 2
+    IDENT = 3
+    INT = 4
+    STRING = 5
     IF = 6
     ELSE = 7
     WHILE = 8
     BEGIN = 9
     END = 10
     PROGRAM = 11
-    abrePar = 12
-    fechaPar = 13
-    virg = 14
-    ptoVirg = 15
-    pto = 16
-    oprel = 18
+    ABREPAR = 12
+    FECHAPAR = 13
+    VIRG = 14
+    PTOVIRG = 15
+    FUNCTION = 17
+    OPREL = 18
+    ABRECONCH = 19
+    FECHACONCH = 20
+    IN = 21
+    DO = 22
     AND = 23
     OR = 24
     NOT = 25
-    mais = 26
-    menos = 27
-    multiplica = 28
-    divide = 29
+    MAIS = 26
+    MENOS = 27
+    MULTIPLICA = 28
+    DIVIDE = 29
     READ = 30
-    write = 31
+    WRITE = 31
     VAR = 32
-    abreChave = 33
-    fechaChave = 34
-    atrib = 35
-    then = 36
+    ABRECHAVE = 33
+    FECHACHAVE = 34
+    ATRIB = 35
+    THEN = 36
     ASPAS_SIMPLES = 37
     ASPAS_DUPLA = 38
     FOR = 39
+    LIST = 41
+    FLOAT = 43
+    RANGE = 44
+    RETURN = 45
+    SETA = 46
+    DPTO = 47
+    MOD = 48
+    LEN = 49
+
 
     @classmethod
     def msg(cls, token):
@@ -48,7 +61,7 @@ class TOKEN(IntEnum):
             1:'erro',
             2:'<eof>',
             3:'ident',
-            4:'numero',
+            4:'intVal',
             5:'string',
             6:'if',
             7:'else',
@@ -61,7 +74,12 @@ class TOKEN(IntEnum):
             14:',',
             15:';',
             16:'.',
+            17:'function',
             18:'oprel',
+            19:'[',
+            20:']',
+            21:'in',
+            22:'do',
             23:'and',
             24:'or',
             25:'not',
@@ -79,6 +97,14 @@ class TOKEN(IntEnum):
             37:'"',
             38:"'",
             39:'for',
+            41:'ListVal',
+            43:'floatVal',
+            44:'range',
+            45:'return',
+            46:'->',
+            47:':',
+            48:'%',
+            49:'len'
         }
         return nomes[token]
 
@@ -88,18 +114,27 @@ class TOKEN(IntEnum):
             'begin': TOKEN.BEGIN,
             'end': TOKEN.END,
             'if': TOKEN.IF,
-            'then': TOKEN.then,
+            'then': TOKEN.THEN,
             'while': TOKEN.WHILE,
             'else': TOKEN.ELSE,
             'read': TOKEN.READ,
-            'write': TOKEN.write,
+            'write': TOKEN.WRITE,
             'var': TOKEN.VAR,
             'and': TOKEN.AND,
             'or': TOKEN.OR,
             'not': TOKEN.NOT,
-            'for': TOKEN.FOR
+            'for': TOKEN.FOR,
+            'function': TOKEN.FUNCTION,
+            'list': TOKEN.LIST,
+            'int': TOKEN.INT,
+            'float': TOKEN.FLOAT,
+            'in': TOKEN.IN,
+            'do': TOKEN.DO,
+            'return': TOKEN.RETURN,
+            'range': TOKEN.RANGE,
+            'len': TOKEN.LEN,
         }
         if lexema in reservadas:
             return reservadas[lexema]
         else:
-            return TOKEN.ident
+            return TOKEN.IDENT
