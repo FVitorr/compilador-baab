@@ -52,7 +52,10 @@ class TOKEN(IntEnum):
     SETA = 46
     DPTO = 47
     MOD = 48
-    LEN = 49
+    intVal = 49
+    floatVal = 50
+    strVal = 51
+
 
 
     @classmethod
@@ -61,7 +64,7 @@ class TOKEN(IntEnum):
             1:'erro',
             2:'<eof>',
             3:'ident',
-            4:'intVal',
+            4:'int',
             5:'string',
             6:'if',
             7:'else',
@@ -98,13 +101,15 @@ class TOKEN(IntEnum):
             38:"'",
             39:'for',
             41:'ListVal',
-            43:'floatVal',
+            43:'float',
             44:'range',
             45:'return',
             46:'->',
             47:':',
             48:'%',
-            49:'len'
+            49:'intVal',
+            50:'floatVal',
+            51:'strVal',
         }
         return nomes[token]
 
@@ -132,7 +137,7 @@ class TOKEN(IntEnum):
             'do': TOKEN.DO,
             'return': TOKEN.RETURN,
             'range': TOKEN.RANGE,
-            'len': TOKEN.LEN,
+            'string': TOKEN.STRING
         }
         if lexema in reservadas:
             return reservadas[lexema]

@@ -16,6 +16,21 @@ class Lexico:
         self.linha = 1  # linha atual no fonte
         self.coluna = 0  # coluna atual no fonte
         self.prebuild = '' #<r>
+    
+    def getErroPos(self, line, col):
+        try:
+            lines = open(self.arqFonte, "r").readlines()
+            if line < 1 or line > len(lines):
+                raise ValueError("Número da linha está fora do intervalo do arquivo.")
+            line_ = lines[line - 1].strip()
+
+            if col == -1: col = len(line_)
+            r_line = " " * (col - 1) + "^"
+            return line_ + "\n" + r_line
+        except ValueError as ve:
+            raise ve
+        except Exception as e:
+            raise Exception(f"Erro ao obter a linha: {e}")
 
     def readF(self):
         return open(self.arqFonte, "r").read()
@@ -145,7 +160,7 @@ class Lexico:
                     estado = 10
                 else:
                     self.unGetChar(simbolo)
-                    return (TOKEN.INT, lexema, lin, col)
+                    return (TOKEN.intVal, lexema, lin, col)
 
             elif estado == 3.1:
                 #parte real do numero
@@ -160,12 +175,12 @@ class Lexico:
                     estado = 10
                 else:
                     self.unGetChar(simbolo)
-                    return (TOKEN.FLOAT, lexema, lin, col)
+                    return (TOKEN.floatVal, lexema, lin, col)
             elif estado == 4: #String
                 while True:
                     if simbolo == TOKEN.msg(TOKEN.ASPAS_SIMPLES) or simbolo == TOKEN.msg(TOKEN.ASPAS_DUPLA):
                         lexema += simbolo
-                        return (TOKEN.STRING, lexema, lin, col)
+                        return (TOKEN.strVal, lexema, lin, col)
                     elif simbolo in ['\0', '\n', ';']:
                         return (TOKEN.erro, lexema, lin, col)
                     else:
@@ -218,7 +233,7 @@ class Lexico:
                    
                 self.unGetChar(simbolo)
                 estado = 1
-                return (TOKEN.erro, lexema, lin, col)
+                return (TOKEN.ERRO, lexema, lin, col)
             else:
                 print('BUG!!!')
                 
