@@ -1,19 +1,24 @@
 # ---------------------------------------------------
 # Tradutor para a linguagem B-A-BA plus
 #
-# versao 1a (21/nov/2024)
+# versao 2a (28/nov/2024)
 # ---------------------------------------------------
 from ttoken import TOKEN
 
 class Semantico:
 
     def __init__(self, nomeAlvo):
-        self.tabelaSimbolos = dict()
+        self.tabelaSimbolos = list()
+        self.tabelaSimbolos = [dict()] + self.tabelaSimbolos
         self.alvo = open(nomeAlvo, "wt")
-        self.declara('len', (TOKEN.FUNCTION, ((None,True), (TOKEN.INT, False))))
-        self.declara('num2str', (TOKEN.FUNCTION, ((TOKEN.FLOAT,False), (TOKEN.STRING, False))))
-        self.declara('str2num', (TOKEN.FUNCTION, ((TOKEN.STRING,False), (TOKEN.FLOAT, False))))
-        self.declara('trunc', (TOKEN.FUNCTION, ((TOKEN.FLOAT,False), (TOKEN.INT, False))))
+        self.declara((TOKEN.IDENT,'len',0,0),
+                     (TOKEN.FUNCTION, [(None,True), (TOKEN.INT, False)]))
+        self.declara((TOKEN.IDENT,'num2str',0,0),
+                     (TOKEN.FUNCTION, [(TOKEN.FLOAT,False), (TOKEN.STRING, False)]))
+        self.declara((TOKEN.IDENT,'str2num',0,0),
+                     (TOKEN.FUNCTION, [(TOKEN.STRING,False), (TOKEN.FLOAT, False)]))
+        self.declara((TOKEN.IDENT,'trunc',0,0),
+                     (TOKEN.FUNCTION, [(TOKEN.FLOAT,False), (TOKEN.INT, False)]))
 
     def finaliza(self):
         self.alvo.close()
@@ -29,25 +34,43 @@ class Semantico:
         linha = identacao + codigo
         self.alvo.write(linha)
 
-    def declara(self, nome, tipo):
+    def declara(self, tokenAtual:tuple, tipo:tuple):
         """ nome = lexema do ident
             tipo = (base, lista)
-            base = int | float | strig | function | None # None para listas genericas
+            base = int | float | strig | function | None # listas genericas
             Se base in [int,float,string]
-                lista = boolean # True se o tipo for uma lista da base
+                lista = boolean # True se o tipo for lista
             else
-                Lista = lista com os tipos dos arguentos, sendo
-                o tipo de cada argumento um par (base,lista)
-                Retorno = o ultimo tipo da lista sera o tipo do retorno            
+                Lista = lista com os tipos dos argumentos, mais tipo do retorno
         """
-        if nome in self.tabelaSimbolos:
-            msg = f'A Variavel {nome} ja foi declarada'
-            self.erroSemantico(tipo[0], msg)
+        (token, nome, linha, coluna) = tokenAtual
+        if self.existeNoEscopo(tokenAtual):
+            msg = f'Variavel {nome} redeclarada'
+            self.erroSemantico(tokenAtual, msg)
         else:
-            self.tabelaSimbolos[nome] = tipo
+            escopo = self.tabelaSimbolos[0]
+            escopo[nome] = tipo
+
+    def consulta(self, tokenAtual):
+        (token, nome, linha, coluna) = tokenAtual
+        for escopo in self.tabelaSimbolos:
+            if nome in escopo:
+                return escopo[nome]
+        msg = f'[!] Variavel {nome} não declarada.'
+        self.erroSemantico(tokenAtual, msg)
     
-    def consulta(self, nome):
-        if nome in self.tabelaSimbolos:
-            return self.tabelaSimbolos[nome]
-        else:
-            return None
+    def existeNoEscopo(self, tokenAtual):
+        (token, nome, linha, coluna) = tokenAtual
+    
+        for escopo in self.tabelaSimbolos:
+            if nome in escopo:
+                return True
+        return False
+
+
+    def iniciaFuncao(self, tokenAtual):
+        self.tabelaSimbolos = [dict()] + self.tabelaSimbolos
+
+    def terminaFuncao(self):
+        self.tabelaSimbolos = self.tabelaSimbolos[1:]
+

@@ -3,31 +3,31 @@
 #
 # versao 1a (mar-2024)
 #---------------------------------------------------
-#from lexico import Lexico
-#from sintatico import Sintatico
+from lexico import Lexico
+from sintatico import Sintatico
 
 class Tradutor:
 
     def __init__(self, nomeArq):
         self.nomeArq = nomeArq
+        self.arq = None
+        self.lexico = None
 
     def inicializa(self):
-        self.arq = open(self.nomeArq, "r")
-        #self.lexico = Lexico(self.arq)
-        #self.sintatico = Sintatico(self.lexico)
+        self.lexico = Lexico(self.nomeArq)
+        self.sintatico = Sintatico(self.lexico)
 
     def traduz(self):
         self.sintatico.traduz()
 
-    def finaliza(self):
-        self.arq.close()
 
 # inicia a traducao
 if __name__ == '__main__':
-    x = Tradutor('calc.txt')
+    x = Tradutor('codigoFonte.txt')
     x.inicializa()
+    print(x.sintatico.semantico.tabelaSimbolos)
     x.traduz()
     #x.sintatico.testaLexico()
-    x.finaliza()
+
 
 

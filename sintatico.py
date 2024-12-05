@@ -15,12 +15,11 @@ class Sintatico:
         self.semantico = Semantico(self.nomeAlvo)
 
     def traduz(self):
+        print('Iniciando a tradução...')
         self.tokenLido = self.lexico.getToken()
-        try:
-            self.prog()
-            print('Traduzido com sucesso.')
-        except:
-            pass
+        self.prog()
+        print('Traduzido com sucesso.')
+
 
     def consome(self, tokenAtual):
         (token, lexema, linha, coluna) = self.tokenLido
@@ -84,41 +83,48 @@ class Sintatico:
         #<funcao> -> function ident ( <params> ) <tipoResultado> <corpo>
         self.consome(TOKEN.FUNCTION)
         IDENT = self.consome(TOKEN.IDENT)
-        #self.consome(TOKEN.IDENT)
         self.consome(TOKEN.ABREPAR)
-        self.params()
+        argumentos = self.params()
         self.consome(TOKEN.FECHAPAR)
         RETURN = self.tipoResultado()
+        self.semantico.declara(IDENT, (TOKEN.FUNCTION, argumentos + RETURN))
+        self.semantico.iniciaFuncao(self.tokenLido)
+        for p in argumentos:
+            (tt, (tipo,info)) = p
+            self.semantico.declara(tt, (tipo, info))
         self.corpo()
-        info = (IDENT, RETURN)
-        self.semantico.declara(IDENT[1], (TOKEN.FUNCTION, info))
+        self.semantico.terminaFuncao()
     
     def tipoResultado(self):
         #<tipoResultado> -> LAMBDA | -> <tipo>
         if self.tokenLido[0] == TOKEN.SETA:
             self.consome(TOKEN.SETA)
-            return self.tipo()
+            tipo = self.tipo()
         else:
-            pass    
+            tipo = None    
+        token = (0,0,0,0)
+        return [(token,tipo)]
     
     def params(self):
         #<params> -> <tipo> ident <restoParams> | LAMBDA
         if self.tokenLido[0] in [TOKEN.INT, TOKEN.FLOAT, TOKEN.STRING]:
-            self.tipo()
-            self.consome(TOKEN.IDENT)
-            self.restoParams()
+            tipo = self.tipo()
+            IDENT = self.consome(TOKEN.IDENT)
+            resto = self.restoParams()
+            return [(IDENT,tipo)] + resto
         else:
-            pass
+            return []
 
     def restoParams(self):
         #<restoParams> -> LAMBDA | , <tipo> ident <restoParams>
         if self.tokenLido[0] == TOKEN.VIRG:
             self.consome(TOKEN.VIRG)
-            self.tipo()
-            self.consome(TOKEN.IDENT)
-            self.restoParams()
+            tipo = self.tipo()
+            IDENT = self.consome(TOKEN.IDENT)
+            resto = self.restoParams()
+            return [(IDENT,tipo)] + resto
         else:
-            pass
+            return []
 
     def corpo(self):
         #<corpo> -> begin <declaracoes> <calculo> end
@@ -160,16 +166,18 @@ class Sintatico:
         #<tipo> -> string <opcLista> | int <opcLista> | float <opcLista> 
         if self.tokenLido[0] == TOKEN.FLOAT:
             FLOAT = self.consome(TOKEN.FLOAT)
-            self.opcLista()
-            return TOKEN.FLOAT
+            opcLista = self.opcLista()
+            tipo = TOKEN.FLOAT
         elif self.tokenLido[0] == TOKEN.INT:
             INT = self.consome(TOKEN.INT)
-            self.opcLista() 
-            return TOKEN.INT
+            opcLista = self.opcLista() 
+            tipo = TOKEN.INT
         else:
             STRING = self.consome(TOKEN.STRING)
-            self.opcLista()
-            return TOKEN.STRING 
+            opcLista = self.opcLista()
+            tipo = TOKEN.STRING 
+        
+        return tipo, opcLista
 
     def opcLista(self):
         #<opcLista> -> [ list ] | LAMBDA
@@ -177,8 +185,10 @@ class Sintatico:
             self.consome(TOKEN.ABRECONCH)
             self.consome(TOKEN.LIST)
             self.consome(TOKEN.FECHACONCH)
+
+            return True
         else:
-            pass
+            return False
 
     def calculo(self):
         #<calculo> -> LAMBDA | <com><calculo>
