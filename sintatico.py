@@ -84,12 +84,12 @@ class Sintatico:
         self.consome(TOKEN.FUNCTION)
         IDENT = self.consome(TOKEN.IDENT)
         self.consome(TOKEN.ABREPAR)
-        argumentos = self.params()
+        ARGS = self.params()
         self.consome(TOKEN.FECHAPAR)
         RETURN = self.tipoResultado()
-        self.semantico.declara(IDENT, (TOKEN.FUNCTION, argumentos + RETURN))
+        self.semantico.declara(IDENT, (TOKEN.FUNCTION, ARGS + RETURN))
         self.semantico.iniciaFuncao(self.tokenLido)
-        for p in argumentos:
+        for p in ARGS:
             (tt, (tipo,info)) = p
             self.semantico.declara(tt, (tipo, info))
         self.corpo()
@@ -109,9 +109,9 @@ class Sintatico:
         #<params> -> <tipo> ident <restoParams> | LAMBDA
         if self.tokenLido[0] in [TOKEN.INT, TOKEN.FLOAT, TOKEN.STRING]:
             tipo = self.tipo()
-            IDENT = self.consome(TOKEN.IDENT)
+            salvarIdent = self.consome(TOKEN.IDENT)
             resto = self.restoParams()
-            return [(IDENT,tipo)] + resto
+            return [(salvarIdent,tipo)] + resto
         else:
             return []
 
@@ -120,9 +120,9 @@ class Sintatico:
         if self.tokenLido[0] == TOKEN.VIRG:
             self.consome(TOKEN.VIRG)
             tipo = self.tipo()
-            IDENT = self.consome(TOKEN.IDENT)
+            salvarIdent = self.consome(TOKEN.IDENT)
             resto = self.restoParams()
-            return [(IDENT,tipo)] + resto
+            return [(salvarIdent,tipo)] + resto
         else:
             return []
 
@@ -144,23 +144,29 @@ class Sintatico:
     
     def declara(self):
         #<declara> -> <tipo> <idents> ;
-        self.tipo()
-        self.idents()
+        tipo = self.tipo()
+        salvarIdent = self.idents()
         self.consome(TOKEN.PTOVIRG)
+
+        for tt in salvarIdent:
+            self.semantico.declara(tt, tipo)
+        
 
     def idents(self):
         #<idents> -> ident <restoIdents> 
-        self.consome(TOKEN.IDENT)
-        self.restoIdents()
+        salvarIdent = self.consome(TOKEN.IDENT)
+        resto = self.restoIdents()
+
+        return [salvarIdent] + resto
     
     def restoIdents(self):
         #<restoIdents> -> , ident <restoIdents> | LAMBDA 
         if self.tokenLido[0] == TOKEN.VIRG:
             self.consome(TOKEN.VIRG)
-            self.consome(TOKEN.IDENT)
-            self.restoIdents()
+            salvarIdent = self.consome(TOKEN.IDENT)
+            return [salvarIdent] + self.restoIdents()
         else:
-            pass
+            return []
     
     def tipo(self):
         #<tipo> -> string <opcLista> | int <opcLista> | float <opcLista> 
@@ -202,7 +208,12 @@ class Sintatico:
     def com(self):
         #<com> -> <atrib> | <if> | <leitura> | <escrita> | <bloco> | <for> | <while> | <retorna> | <call> 
         if self.tokenLido[0] == TOKEN.IDENT:
-            self.atrib()
+            salvarIdent = self.tokenLido
+            (tipo, info) = self.semantico.consulta(salvarIdent)
+            if tipo == TOKEN.FUNCTION:
+                self.call()
+            else:
+                self.atrib()
         elif self.tokenLido[0] == TOKEN.IF:
             self.se()
         elif self.tokenLido[0] == TOKEN.READ:
@@ -481,10 +492,14 @@ class Sintatico:
         #<folha> -> intVal | floatVal | strVal | <call> | <lista> | ( <exp> ) 
         if self.tokenLido[0] == TOKEN.intVal:
             self.consome(TOKEN.intVal)
+            return TOKEN.INT, False
         elif self.tokenLido[0] == TOKEN.floatVal:
             self.consome(TOKEN.floatVal)
+            return TOKEN.FLOAT, False
         elif self.tokenLido[0] == TOKEN.strVal:
             self.consome(TOKEN.strVal)
+            return TOKEN.STRING, False
+
         elif self.tokenLido[0] == TOKEN.IDENT or self.tokenLido[0] == TOKEN.ABRECONCH:
             self.lista()
         elif self.tokenLido[0] == TOKEN.ABREPAR:

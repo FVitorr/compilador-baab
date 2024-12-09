@@ -19,6 +19,10 @@ class Semantico:
                      (TOKEN.FUNCTION, [(TOKEN.STRING,False), (TOKEN.FLOAT, False)]))
         self.declara((TOKEN.IDENT,'trunc',0,0),
                      (TOKEN.FUNCTION, [(TOKEN.FLOAT,False), (TOKEN.INT, False)]))
+        
+        
+
+
 
     def finaliza(self):
         self.alvo.close()
@@ -35,6 +39,9 @@ class Semantico:
         self.alvo.write(linha)
 
     def declara(self, tokenAtual:tuple, tipo:tuple):
+        #self.declara((TUPLA),(BASE, LISTA))
+        #BASE = { TOKEN.INT, TOKEN.FLOAT, TOKEN.STRING, TOKEN.FUNCTION, None }
+        #LISTA = { [(Parametros, isLista), (Retorno, isLista)] }
         """ nome = lexema do ident
             tipo = (base, lista)
             base = int | float | strig | function | None # listas genericas
@@ -44,7 +51,7 @@ class Semantico:
                 Lista = lista com os tipos dos argumentos, mais tipo do retorno
         """
         (token, nome, linha, coluna) = tokenAtual
-        if self.existeNoEscopo(tokenAtual):
+        if not self.consulta(tokenAtual) is None:
             msg = f'Variavel {nome} redeclarada'
             self.erroSemantico(tokenAtual, msg)
         else:
@@ -56,8 +63,7 @@ class Semantico:
         for escopo in self.tabelaSimbolos:
             if nome in escopo:
                 return escopo[nome]
-        msg = f'[!] Variavel {nome} não declarada.'
-        self.erroSemantico(tokenAtual, msg)
+        return None
     
     def existeNoEscopo(self, tokenAtual):
         (token, nome, linha, coluna) = tokenAtual
