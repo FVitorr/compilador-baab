@@ -20,10 +20,29 @@ class Semantico:
         self.declara((TOKEN.IDENT,'trunc',0,0),
                      (TOKEN.FUNCTION, [(TOKEN.FLOAT,False), (TOKEN.INT, False)]))
         
+        self.operacoes = {
+            ((TOKEN.INT, False),TOKEN.MAIS,(TOKEN.INT, False)): (TOKEN.INT, False),
+            ((TOKEN.INT, False),TOKEN.MENOS,(TOKEN.INT, False)): (TOKEN.INT, False),
+            ((TOKEN.INT, False),TOKEN.MOD,(TOKEN.INT, False)): (TOKEN.INT, False),
+            ((TOKEN.INT, False),TOKEN.MULTIPLICA,(TOKEN.INT, False)): (TOKEN.INT, False),
+            ((TOKEN.INT, False),TOKEN.DIVIDE,(TOKEN.INT, False)): (TOKEN.INT, False),
+            ((TOKEN.INT, False),TOKEN.OR,(TOKEN.INT, False)): (TOKEN.INT, False),
+            ((TOKEN.INT, False),TOKEN.AND,(TOKEN.INT, False)): (TOKEN.INT, False),
+
+            ((TOKEN.FLOAT, False),TOKEN.MAIS,(TOKEN.FLOAT, False)): (TOKEN.FLOAT, False),
+            ((TOKEN.FLOAT, False),TOKEN.MENOS,(TOKEN.FLOAT, False)): (TOKEN.FLOAT, False),
+            ((TOKEN.FLOAT, False),TOKEN.MULTIPLICA,(TOKEN.FLOAT, False)): (TOKEN.FLOAT, False),
+            ((TOKEN.FLOAT, False),TOKEN.DIVIDE,(TOKEN.FLOAT, False)): (TOKEN.FLOAT, False),
+
+            ((TOKEN.FLOAT, False),TOKEN.MAIS,(TOKEN.INT, False)): (TOKEN.FLOAT, False),
+            ((TOKEN.FLOAT, False),TOKEN.MENOS,(TOKEN.INT, False)): (TOKEN.FLOAT, False),
+            ((TOKEN.FLOAT, False),TOKEN.MULTIPLICA,(TOKEN.INT, False)): (TOKEN.FLOAT, False),
+            ((TOKEN.FLOAT, False),TOKEN.DIVIDE,(TOKEN.INT, False)): (TOKEN.FLOAT, False),
+
+
+            ((TOKEN.STRING, False),TOKEN.MAIS,(TOKEN.STRING, False)): (TOKEN.STRING, False),
+        }
         
-
-
-
     def finaliza(self):
         self.alvo.close()
 
@@ -64,19 +83,23 @@ class Semantico:
             if nome in escopo:
                 return escopo[nome]
         return None
-    
-    def existeNoEscopo(self, tokenAtual):
-        (token, nome, linha, coluna) = tokenAtual
-    
-        for escopo in self.tabelaSimbolos:
-            if nome in escopo:
-                return True
-        return False
-
 
     def iniciaFuncao(self, tokenAtual):
         self.tabelaSimbolos = [dict()] + self.tabelaSimbolos
 
     def terminaFuncao(self):
         self.tabelaSimbolos = self.tabelaSimbolos[1:]
+    
+
+    # i = -"oi"      op1 = (none,none) op2 = ("oi",string) operacao = -
+    def checarOper(self, op1, op2, operacao):
+        if (op1, operacao, op2) in self.operacoes:
+            return self.operacoes[(op1, operacao, op2)]
+        elif (op2, operacao, op1) in self.operacoes:
+            return self.operacoes[(op2, operacao, op1)]
+        else:
+            return None
+
+
+
 

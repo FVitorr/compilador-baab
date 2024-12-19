@@ -28,11 +28,7 @@ if __name__ == '__main__':
     x.inicializa()
     x.traduz()
         
-    l = x.sintatico.semantico.tabelaSimbolos
 
-    for j in range(0,len(l)):
-        for chave, valor in l[j].items():
-            print(f'Escopo: {j} -> "{chave}": "{valor}"')
     #x.sintatico.testaLexico()
 
 

@@ -59,6 +59,11 @@ class Sintatico:
         # <prog> -> <funcao> <RestoFuncoes>
         self.funcao()
         self.restoFuncoes()
+
+        l = self.semantico.tabelaSimbolos
+        print()
+        for chave, valor in l[0].items():
+            print(f'Escopo Global: "{chave}": "{valor}"')
     
     def restoFuncoes(self):
         #<RestoFuncoes> -> <funcao> <RestoFuncoes> | LAMBDA
@@ -92,8 +97,18 @@ class Sintatico:
         for p in ARGS:
             (tt, (tipo,info)) = p
             self.semantico.declara(tt, (tipo, info))
+        
         self.corpo()
+        l = self.semantico.tabelaSimbolos
+
+        print()
+        for chave, valor in l[0].items():
+            print(f'Escopo {IDENT[1]}: "{chave}": "{valor}"')
+    
+
         self.semantico.terminaFuncao()
+
+
     
     def tipoResultado(self):
         #<tipoResultado> -> LAMBDA | -> <tipo>
@@ -206,14 +221,20 @@ class Sintatico:
             pass
 
     def com(self):
-        #<com> -> <atrib> | <if> | <leitura> | <escrita> | <bloco> | <for> | <while> | <retorna> | <call> 
+        #<com> -> <atrib> | <if> | <leitura> | <escrita> | <bloco> | <for> | <while> | <retorna> | <call>  ;
         if self.tokenLido[0] == TOKEN.IDENT:
             salvarIdent = self.tokenLido
-            (tipo, info) = self.semantico.consulta(salvarIdent)
-            if tipo == TOKEN.FUNCTION:
-                self.call()
+            result = self.semantico.consulta(salvarIdent)
+            if result is None:
+                msg = f'Variavel {salvarIdent[1]} não declarada'
+                self.semantico.erroSemantico(salvarIdent, msg)
             else:
-                self.atrib()
+                (tipo, info) = result
+                if (tipo == TOKEN.FUNCTION):
+                    self.call()
+                    self.consome(TOKEN.PTOVIRG)
+                else:
+                    self.atrib()
         elif self.tokenLido[0] == TOKEN.IF:
             self.se()
         elif self.tokenLido[0] == TOKEN.READ:
@@ -266,10 +287,10 @@ class Sintatico:
         if self.tokenLido[0] == TOKEN.RANGE:
             self.consome(TOKEN.RANGE)
             self.consome(TOKEN.ABREPAR)
-            self.exp()
+            tipoExp = self.exp() #TIPO INTEIRO
             self.consome(TOKEN.VIRG)
-            self.exp()
-            self.opcRange()
+            tipoExp2 = self.exp() #TIPO INTEIRO
+            self.opcRange() #LAMBDA | TIPO INTEIRO
             self.consome(TOKEN.FECHAPAR)
         else:
             self.lista()
@@ -323,7 +344,13 @@ class Sintatico:
     
     def atrib(self):
         #<atrib> -> ident <opcIndice> = <exp> ;
-        self.consome(TOKEN.IDENT)
+        salvarIdent = self.consome(TOKEN.IDENT)
+        
+        result = self.semantico.consulta(salvarIdent)
+        if result is None:
+            msg = f'Variavel {salvarIdent[1]} não declarada'
+            self.semantico.erroSemantico(salvarIdent, msg)
+        
         self.opcIndice()
         self.consome(TOKEN.ATRIB)
         self.exp()
@@ -394,71 +421,79 @@ class Sintatico:
 
     def exp(self):
         # <exp> -> <disj>
-        self.disj()
+        return self.disj()
 
     def disj(self):
         #<disj> -> <conj> <restoDisj>
-        self.conj()
-        self.restoDisj()
+        conj = self.conj()
+        return self.restoDisj(conj)
     
-    def restoDisj(self):
+    def restoDisj(self, tipo):
         #<restoDisj> -> LAMBDA | or <conj> <restoDisj>
-        while self.tokenLido[0] == TOKEN.OR:
+        if self.tokenLido[0] == TOKEN.OR:
             self.consome(TOKEN.OR)
-            self.conj()
-            #restoDisj() -> capturado pelo loop
-        pass #LAMBDA
-    
+            tipoConj = self.conj()
+            nTipo = self.semantico.checarOper(tipo, tipoConj, TOKEN.OR)
+            return self.restoDisj(nTipo)
+        
+        return tipo
+
     def conj(self):
         #<conj> -> <nao> <restoConj>
-        self.nao()
-        self.restoConj()
+        nao = self.nao()
+        return self.restoConj(nao)
 
-    def restoConj(self):
+    def restoConj(self, tipo):
         #<restoConj> -> LAMBDA | and <nao> <restoConj>
-        while self.tokenLido[0] == TOKEN.AND:
+        if self.tokenLido[0] == TOKEN.AND:
             self.consome(TOKEN.AND)
-            self.nao()
-            #restoConj() -> capturado pelo loop
-        pass
+            nao = self.nao()
+            nTipo = self.semantico.checarOper(tipo, nao, TOKEN.AND)
+            return self.restoConj(nTipo)
+        return tipo
 
     def nao(self):
         # <nao> -> not <nao> | <rel>
         if self.tokenLido[0] == TOKEN.NOT:
             self.consome(TOKEN.NOT)
-            self.nao()
+            return self.nao()
         else:
-            self.rel()
+            return self.rel()
         
     def rel(self):
         # <rel> -> <soma> <restoRel>
-        self.soma()
-        self.restoRel()
+        soma = self.soma()
+        return self.restoRel(soma)
         
     
-    def restoRel(self):
+    def restoRel(self, tipo):
         #<restoRel> -> LAMBDA | oprel <soma>
         if self.tokenLido[0] == TOKEN.OPREL:
             self.consome(TOKEN.OPREL)
-            self.soma()
+            soma = self.soma()
+            return self.semantico.checarOper(tipo, soma, TOKEN.OPREL)
         else:
-            pass #LAMBDA
-
+            return tipo
+        
     def soma(self):
         # <soma> -> <mult> <restoSoma>
-        self.mult()
-        self.restosoma()
+        mult = self.mult()
+        self.restosoma(mult)
     
-    def restosoma(self):
+    def restosoma(self, tipo):
         # <restoSoma> -> LAMBDA | + <mult> <restoSoma> | - <mult> <restoSoma>
-        while self.tokenLido[0] in [TOKEN.MAIS, TOKEN.MENOS]:
+        if self.tokenLido[0] in [TOKEN.MAIS, TOKEN.MENOS]:
             if self.tokenLido[0] == TOKEN.MAIS:
                 self.consome(TOKEN.MAIS)
-                self.mult()
+                mult = self.mult()
+                nTipo = self.semantico.checarOper(tipo, mult, TOKEN.MAIS)
+                self.restosoma(nTipo)
             elif self.tokenLido[0] == TOKEN.MENOS:
                 self.consome(TOKEN.MENOS)
-                self.mult()
-        pass #LAMBDA
+                mult = self.mult()
+                nTipo = self.semantico.checarOper(tipo, mult, TOKEN.MENOS)
+                self.restosoma(nTipo)
+        return tipo
         
     def mult(self):
         # <mult> -> <uno> <restoMult>
@@ -484,8 +519,11 @@ class Sintatico:
         while self.tokenLido[0] in [TOKEN.MAIS, TOKEN.MENOS]:
             if self.tokenLido[0] == TOKEN.MAIS:
                 self.consome(TOKEN.MAIS)
+                return TOKEN.MAIS
             else:
                 self.consome(TOKEN.MENOS)
+                return TOKEN.MENOS
+
         self.folha()
 
     def folha(self):
@@ -500,14 +538,27 @@ class Sintatico:
             self.consome(TOKEN.strVal)
             return TOKEN.STRING, False
 
-        elif self.tokenLido[0] == TOKEN.IDENT or self.tokenLido[0] == TOKEN.ABRECONCH:
-            self.lista()
+        elif self.tokenLido[0] == TOKEN.IDENT or self.tokenLido[0] == TOKEN.ABRECONCH:  
+            salvarIdent = self.tokenLido
+            result = self.semantico.consulta(salvarIdent)
+            if salvarIdent[0] == TOKEN.ABRECONCH:
+                self.lista()
+            elif result is None:
+                msg = f'Variavel {salvarIdent[1]} não declarada'
+                self.semantico.erroSemantico(salvarIdent, msg)
+            else:
+                (tipo, info) = result
+                if (tipo == TOKEN.FUNCTION):
+                    self.call()
+                else:
+                    self.lista()
         elif self.tokenLido[0] == TOKEN.ABREPAR:
             self.consome(TOKEN.ABREPAR)
             self.exp()
             self.consome(TOKEN.FECHAPAR)
-        else:
+        else:   
             self.call()
+
     
     def call(self):
         #<call> -> ident ( <lista_outs> ) 
