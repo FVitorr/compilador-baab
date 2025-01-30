@@ -100,7 +100,7 @@ class TOKEN(IntEnum):
             37:'"',
             38:"'",
             39:'for',
-            41:'ListVal',
+            41:'list',
             43:'float',
             44:'range',
             45:'return',

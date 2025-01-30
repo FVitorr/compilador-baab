@@ -5,6 +5,7 @@
 #---------------------------------------------------
 from lexico import Lexico
 from sintatico import Sintatico
+import sys
 import json
 
 class Tradutor:
@@ -22,14 +23,18 @@ class Tradutor:
         self.sintatico.traduz()
 
 
+''' if len(sys.argv) != 2:
+            print("Uso correto: python tradutor.py <arquivo>")
+        else:
+            arquivo = sys.argv[1]
+            x = Tradutor(arquivo)
+            x.inicializa()
+            x.traduz()
+'''
+
 # inicia a traducao
 if __name__ == '__main__':
     x = Tradutor('codigoFonte.txt')
     x.inicializa()
     x.traduz()
-        
-
-    #x.sintatico.testaLexico()
-
-
-
+    #x.lexico.testaLexico()

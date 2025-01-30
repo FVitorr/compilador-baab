@@ -178,14 +178,19 @@ class Lexico:
                     return (TOKEN.floatVal, lexema, lin, col)
             elif estado == 4: #String
                 while True:
-                    if simbolo == TOKEN.msg(TOKEN.ASPAS_SIMPLES) or simbolo == TOKEN.msg(TOKEN.ASPAS_DUPLA):
+                    if simbolo == '"':
                         lexema += simbolo
-                        return (TOKEN.strVal, lexema, lin, col)
-                    elif simbolo in ['\0', '\n', ';']:
-                        return (TOKEN.erro, lexema, lin, col)
-                    else:
+                        return TOKEN.strVal, lexema, lin, col
+                    elif simbolo in ['\n', '\0']:
+                        return TOKEN.ERRO, lexema, lin, col
+                    elif simbolo == '\\':
                         lexema += simbolo
                         simbolo = self.obterChar()
+                        if simbolo in ['\n', '\0']:
+                            return TOKEN.ERRO, lexema, lin, col
+
+                    lexema += simbolo
+                    simbolo = self.obterChar()
             elif estado == 5:
                 if simbolo == '=':
                     lexema = lexema + simbolo
@@ -239,32 +244,22 @@ class Lexico:
                 
             lexema = lexema + simbolo
             simbolo = self.obterChar()
+    
+    @staticmethod
+    def imprimir_token(token_corrente):
+        (token, lexema, linha, coluna) = token_corrente
+        msg = TOKEN.msg(token)
+        print(f'(tk = {msg}, lex = "{lexema}", lin = {linha}, col = {coluna})')
         
     
     def testaLexico(self):
         self.tokenLido = self.getToken()
         (token, lexema, linha, coluna) = self.tokenLido
         while token != TOKEN.EOF :
-            self.imprimeToken(self.tokenLido)
+            self.imprimir_token(self.tokenLido)
             self.tokenLido = self.getToken()
             (token, lexema, linha, coluna) = self.tokenLido
     
-    def imprimeToken(self, tokenCorrente):
-        (token, lexema, linha, coluna) = tokenCorrente
-        msg = TOKEN.msg(token)
-
-        # Definindo a largura total desejada para a linha, incluindo os pontos
-        largura_total = 50
-
-        # Formata o token e o lexema com um espaço entre eles
-        saida_inicial = f'< {TOKEN.msg(token)} ,  "{lexema}" >'
-
-        # Calcula o número de pontos necessário para preencher até a largura total
-        num_pontos = largura_total - len(saida_inicial) - len(f'[{linha},{coluna}]')
-        pontos = '.' * max(num_pontos, 0)  # Garante que não será negativo
-
-        # Formata a saída final com os colchetes e as coordenadas de linha e coluna
-        print(f'{saida_inicial}{pontos} [{linha},{coluna}]')
 
 
                 
