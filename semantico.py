@@ -69,6 +69,9 @@ class Semantico:
             ((TOKEN.INT, True), TOKEN.ATRIB, (None, True)): (TOKEN.INT, True),
             ((TOKEN.FLOAT, True), TOKEN.ATRIB, (None, True)): (TOKEN.FLOAT, True),
             ((TOKEN.STRING, True), TOKEN.ATRIB, (None, True)): (TOKEN.STRING, True),
+            ((None, True), TOKEN.ATRIB, (TOKEN.INT, True)): (TOKEN.INT, True),
+            ((None, True), TOKEN.ATRIB, (TOKEN.FLOAT, True)): (TOKEN.FLOAT, True),
+            ((None, True), TOKEN.ATRIB, (TOKEN.STRING, True)): (TOKEN.STRING, True),
             ((TOKEN.FLOAT, True), TOKEN.ATRIB, (TOKEN.INT, True)): (TOKEN.FLOAT, True),
             ((TOKEN.INT, False), TOKEN.VIRG, (TOKEN.INT, False)): (TOKEN.INT, False),
             ((TOKEN.FLOAT, False), TOKEN.VIRG, (TOKEN.FLOAT, False)): (TOKEN.FLOAT, False),
@@ -91,7 +94,7 @@ class Semantico:
 
         self.funcoes_nativas = {
             'len': 'len',
-            'num2str': 'int',
+            'num2str': 'str',
             'str2num': 'float',
             'trunc': 'math.trunc',
         }
@@ -163,7 +166,6 @@ class Semantico:
 
     # i = -"oi"      op1 = (none,none) op2 = ("oi",string) operacao = -
     def checarOper(self, op1, op2 = None, operacao = None):
-        print(op1, op2, operacao)
         return self.operacoes.get((op1, operacao, op2), None)
         
     def verificaRetornoFuncao(self,token_atual, tipo_retorno):
@@ -202,11 +204,11 @@ class Semantico:
         consulta = self.consulta(token_main)
         if consulta is None:
             msg = '[!] - ERRO -> Função \'main\' não declarada!'
-            self.erro_semantico(token_main, msg)
+            self.erroSemantico(token_main, msg)
 
         if consulta != padrao_main:
             msg = ('[!] - ERRO -> Formato incorreto para função \'main\'!\n'
                    'Formato esperado: function main() -> int')
-            self.erro_semantico(token_main, msg)
+            self.erroSemantico(token_main, msg)
 
 

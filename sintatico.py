@@ -16,17 +16,18 @@ class Sintatico:
     def __init__(self, lexico):
         self.lexico = lexico
         self.identacao = 0
-        self.nomeAlvo = 'alvo.out'
+        self.nomeAlvo = 'alvo.py'
         self.semantico = Semantico(self.nomeAlvo)
 
     def traduz(self):
-        
-        print('Iniciando a tradução...')
-        self.tokenLido = self.lexico.getToken()
-        self.prog()
-        print('Traduzido com sucesso.')
-
-
+        try:
+            print('Iniciando a tradução...')
+            self.tokenLido = self.lexico.getToken()
+            self.prog()
+            print('[#] Traduzido com sucesso.')
+        except Exception as e:
+            print('Erro na tradução.')
+            print(e)
 
 
     def consome(self, tokenAtual):
@@ -75,9 +76,7 @@ class Sintatico:
         self.codigoFinal()
 
         l = self.semantico.tabelaSimbolos
-        print()
-        for chave, valor in l[0].items():
-            print(f'Escopo Global: "{chave}": "{valor}"')
+
     
     def restoFuncoes(self):
         #<RestoFuncoes> -> <funcao> <RestoFuncoes> | LAMBDA
@@ -97,14 +96,13 @@ class Sintatico:
         ARGS, codigo_1 = self.params()
         self.consome(TOKEN.FECHAPAR)
         RETURN, codigo_2 = self.tipoResultado()
-        print("->> ",RETURN, codigo_2)
         self.semantico.declara(salvarIdent, (TOKEN.FUNCTION, ARGS + RETURN))
         self.semantico.iniciaFuncao(self.tokenLido)
         for p in ARGS:
             (tt, (tipo,info)) = p
             self.semantico.declara(tt, (tipo, info))
 
-        codigo = 'def ' + salvarIdent[1] + '(' + 'self' + codigo_1 + ')' + codigo_2 + ':\n'
+        codigo = ' def ' + salvarIdent[1] + '(' + 'self' + codigo_1 + ')' + codigo_2 + ':\n'
         self.semantico.gera(1, codigo)
 
         self.corpo()
@@ -172,9 +170,16 @@ class Sintatico:
 
         for tt in salvarIdent:
             self.semantico.declara(tt, tipo)
+
         
-        if tipo[1] is True:
-            self.gerar_codigo_listas(salvarIdent)
+        if tipo == (TOKEN.INT, False):
+            self.gerarCodigoDeclaracoes(salvarIdent, '0')
+        elif tipo == (TOKEN.FLOAT, False):
+            self.gerarCodigoDeclaracoes(salvarIdent, '0.0')
+        elif tipo == (TOKEN.STRING, False):
+            self.gerarCodigoDeclaracoes(salvarIdent, '""')
+        elif tipo[1] is True:
+            self.gerarCodigoDeclaracoes(salvarIdent, '[]')
         
 
     def idents(self):
@@ -349,6 +354,7 @@ class Sintatico:
                 self.semantico.erroSemantico(self.tokenLido, msg)
             self.consome(TOKEN.VIRG)
             tipoExp2, codigo_2 = self.exp() #TIPO INTEIRO
+            print(tipoExp2)
             if tipoExp2 !=  (TOKEN.INT, False):
                 msg = '[!] O segundo parametro da função range deve ser inteiro'
                 self.semantico.erroSemantico(self.tokenLido, msg)
@@ -450,11 +456,9 @@ class Sintatico:
 
             self.consome(TOKEN.ATRIB)
             tipoExp, codigo_2 = self.exp()
-
-            print(tipoExp,tipoOpc)
             
             if self.semantico.checarOper(tipoExp, tipoOpc, TOKEN.ATRIB) is None:
-                msg = f'[!] -> Atribuição Inválida! Esperado \'{self.semantico.tipos[tipoOpc]}\', mas recebeu \'{self.semantico.tipos[tipoExp]}\'!'
+                msg = f'[!] Atribuição Inválida! Esperado \'{self.semantico.tipos[tipoOpc]}\', mas recebeu \'{self.semantico.tipos[tipoExp]}\'!'
                 self.semantico.erroSemantico(salvarIdent, msg)
         
             self.consome(TOKEN.PTOVIRG)
@@ -463,20 +467,35 @@ class Sintatico:
 
     def se(self): #CONFERIR
         # <if> -> if ( <exp> ) then <com> <else_opc>
+        salvarToken = self.tokenLido
         if self.tokenLido[0] == TOKEN.IF:
             self.consome(TOKEN.IF)
             self.consome(TOKEN.ABREPAR)
-            self.exp()
+            tipo_exp, codigo = self.exp()
+
+            if tipo_exp != (TOKEN.INT, False):
+                msg = (f'[!] -> IF - Parâmetro Inesperado! Esperado \'{self.semantico.tipos[(TOKEN.INT, False)]}\', '
+                    f'mas recebeu \'{self.semantico.tipos[tipo_exp]}\'!')
+                self.semantico.erroSemantico(salvarToken, msg)
+
             self.consome(TOKEN.FECHAPAR)
+            codigo = 'if ' + codigo + ':\n'
+            self.semantico.gera(self.identacao, codigo)
             self.consome(TOKEN.THEN)
+            self.identacao += 1
             self.com()
+            self.identacao -= 1
             self.elseopc()
         
     def elseopc(self):
         # <else_opc> -> LAMBDA | else <com> 
         if self.tokenLido[0] == TOKEN.ELSE:
             self.consome(TOKEN.ELSE)
+            codigo = 'else: \n'
+            self.semantico.gera(self.identacao, codigo)
+            self.identacao += 1
             self.com()
+            self.identacao -= 1
         else:
             pass
     
@@ -820,11 +839,11 @@ class Sintatico:
             '    prog.main()\n'
         self.semantico.gera(0, codigo_final)
 
-    def gerar_codigo_listas(self, idents):
+    def gerarCodigoDeclaracoes(self, idents, atrib):
         codigo_1, codigo_2 = '', ' = '
         for identificador in idents:
             codigo_1 += identificador[1] + ', '
-            codigo_2 += '[], '
+            codigo_2 += atrib + ', '
         codigo = codigo_1[:-2] + codigo_2[:-2] + '\n'
         self.semantico.gera(self.identacao, codigo)
 
